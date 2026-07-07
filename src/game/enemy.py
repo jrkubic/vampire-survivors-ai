@@ -1,3 +1,4 @@
+# src/game/enemy.py
 import math
 from dataclasses import dataclass
 from src.config import (
@@ -5,6 +6,7 @@ from src.config import (
     TANK_SPEED, TANK_HP, TANK_CONTACT_DAMAGE, TANK_SIZE,
     SHOOTER_SPEED, SHOOTER_HP, SHOOTER_CONTACT_DAMAGE, SHOOTER_SIZE,
     SHOOTER_FIRE_RANGE, SHOOTER_FIRE_COOLDOWN,
+    PROJECTILE_SPEED, PROJECTILE_DAMAGE, PROJECTILE_SIZE, PROJECTILE_LIFETIME,
 )
 
 ENEMY_STATS = {
@@ -46,7 +48,6 @@ class Enemy:
             self.alive = False
 
     def move_toward(self, target_x: float, target_y: float) -> None:
-        """Move toward a target position. Full implementation in Task 2."""
         dx = target_x - self.x
         dy = target_y - self.y
         dist = math.hypot(dx, dy)
@@ -54,9 +55,53 @@ class Enemy:
             self.x += (dx / dist) * self.speed
             self.y += (dy / dist) * self.speed
 
+    def update(self, player_x: float, player_y: float) -> list:
+        """Update enemy for one tick. Returns list of new projectile dicts."""
+        if not self.alive:
+            return []
+
+        dist_to_player = math.hypot(player_x - self.x, player_y - self.y)
+
+        if self.enemy_type == "shooter":
+            return self._update_shooter(player_x, player_y, dist_to_player)
+
+        # Swarmers and tanks just move toward player
+        self.move_toward(player_x, player_y)
+        return []
+
+    def _update_shooter(self, player_x: float, player_y: float, dist: float) -> list:
+        if self.fire_timer > 0:
+            self.fire_timer -= 1
+
+        if dist <= SHOOTER_FIRE_RANGE:
+            # In range — stop and fire if off cooldown
+            if self.fire_timer <= 0:
+                self.fire_timer = SHOOTER_FIRE_COOLDOWN
+                dx = player_x - self.x
+                dy = player_y - self.y
+                length = math.hypot(dx, dy)
+                if length > 0:
+                    return [{
+                        "x": self.x,
+                        "y": self.y,
+                        "dx": (dx / length) * PROJECTILE_SPEED,
+                        "dy": (dy / length) * PROJECTILE_SPEED,
+                        "damage": PROJECTILE_DAMAGE,
+                        "size": PROJECTILE_SIZE,
+                        "lifetime": PROJECTILE_LIFETIME,
+                        "friendly": False,
+                    }]
+            return []
+        else:
+            # Out of range — move toward player
+            self.move_toward(player_x, player_y)
+            return []
+
     def to_dict(self) -> dict:
         return {
-            "x": self.x, "y": self.y,
+            "x": self.x,
+            "y": self.y,
             "type": self.enemy_type,
-            "hp": self.hp, "speed": self.speed,
+            "hp": self.hp,
+            "speed": self.speed,
         }
