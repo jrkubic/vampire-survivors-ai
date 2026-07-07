@@ -1,5 +1,4 @@
 # src/game/main.py
-import pygame
 from src.config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, ARENA_WIDTH, ARENA_HEIGHT, WAVE_INTERVAL, PLAYER_INVINCIBILITY_TICKS
 from src.game.player import Player, DIRECTION_VECTORS
 from src.game.arena import Arena
@@ -91,6 +90,34 @@ class Game:
 
     def run_human(self) -> None:
         """Run the game with human keyboard input."""
+        import pygame
+
+        def _get_keyboard_direction() -> str:
+            """Get movement direction from keyboard input."""
+            keys = pygame.key.get_pressed()
+            up = keys[pygame.K_w] or keys[pygame.K_UP]
+            down = keys[pygame.K_s] or keys[pygame.K_DOWN]
+            left = keys[pygame.K_a] or keys[pygame.K_LEFT]
+            right = keys[pygame.K_d] or keys[pygame.K_RIGHT]
+
+            if up and left:
+                return "up-left"
+            if up and right:
+                return "up-right"
+            if down and left:
+                return "down-left"
+            if down and right:
+                return "down-right"
+            if up:
+                return "up"
+            if down:
+                return "down"
+            if left:
+                return "left"
+            if right:
+                return "right"
+            return "none"
+
         pygame.init()
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("Vampire Survivors AI — Human Mode")
@@ -110,35 +137,10 @@ class Game:
                         self.reset()
 
             if self.player.alive:
-                direction = self._get_keyboard_direction()
+                direction = _get_keyboard_direction()
                 self.tick(direction)
 
             renderer.render(self.player, self.arena)
             clock.tick(FPS)
 
         pygame.quit()
-
-    def _get_keyboard_direction(self) -> str:
-        keys = pygame.key.get_pressed()
-        up = keys[pygame.K_w] or keys[pygame.K_UP]
-        down = keys[pygame.K_s] or keys[pygame.K_DOWN]
-        left = keys[pygame.K_a] or keys[pygame.K_LEFT]
-        right = keys[pygame.K_d] or keys[pygame.K_RIGHT]
-
-        if up and left:
-            return "up-left"
-        if up and right:
-            return "up-right"
-        if down and left:
-            return "down-left"
-        if down and right:
-            return "down-right"
-        if up:
-            return "up"
-        if down:
-            return "down"
-        if left:
-            return "left"
-        if right:
-            return "right"
-        return "none"
